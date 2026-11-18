@@ -89,6 +89,8 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     ollama_base_url: str = "http://127.0.0.1:11434"
     request_timeout_seconds: float = Field(default=120.0, gt=0, le=600)
+    provider_max_attempts: int = Field(default=3, ge=1, le=5)
+    provider_retry_backoff_seconds: float = Field(default=0.5, ge=0, le=10)
 
     @field_validator("port")
     @classmethod

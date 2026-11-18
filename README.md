@@ -70,8 +70,10 @@ in the working directory. Secrets are read as `SecretStr` and are redacted from 
 | `ORBIT_OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter-compatible endpoint |
 | `ORBIT_OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Local Ollama endpoint |
 | `ORBIT_REQUEST_TIMEOUT_SECONDS` | `120` | Outbound provider timeout |
+| `ORBIT_PROVIDER_MAX_ATTEMPTS` | `3` | Retry attempts for transient provider failures |
+| `ORBIT_PROVIDER_RETRY_BACKOFF_SECONDS` | `0.5` | Base exponential backoff between retries |
 
-Credentials belong in the OS keyring (planned, Milestone 2/6) or `.env` during development.
+Credentials belong in the OS keyring (planned) or `.env` during development.
 `.env` is git-ignored.
 
 ## API (v1, current)
@@ -80,6 +82,11 @@ Credentials belong in the OS keyring (planned, Milestone 2/6) or `.env` during d
 | --- | --- | --- |
 | `GET` | `/health` and `/api/v1/health` | Liveness + database check; `503` when the DB is down |
 | `GET` | `/api/v1/system/info` | Version, environment, Python/platform/architecture, start time |
+| `GET` | `/api/v1/providers` | Provider list with configured state and capabilities |
+| `GET` | `/api/v1/providers/{id}/models` | Live model discovery for one provider |
+| `POST` | `/api/v1/providers/{id}/test` | Connection test with latency and model count |
+| `GET` | `/api/v1/models` | Aggregated discovery across configured providers |
+| `GET`/`PUT` | `/api/v1/models/default` | Read or persist the default model selection |
 | `GET` | `/docs`, `/openapi.json` | OpenAPI documentation |
 
 Errors use a stable envelope: `{"error": {"code", "message", "request_id", "details"}}`.
@@ -111,7 +118,7 @@ Agent-facing engineering rules live in [AGENTS.md](AGENTS.md).
 ## Roadmap
 
 1. Foundation — settings, logging, API bootstrap, SQLite + migrations, tests ✅
-2. Model providers — OpenRouter, Ollama, discovery, streaming, connection tests
+2. Model providers — OpenRouter, Ollama, discovery, streaming adapters, connection tests ✅
 3. Chat — conversations, SSE streaming, persistence, context window
 4. Web UI and CLI — React app, chat, setup wizard, i18n (pt-BR, en-US, es-ES), themes
 5. Agent runtime — execution loop, planning, tools, limits, cancellation

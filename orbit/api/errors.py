@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from orbit.api.middleware import current_request_id
+from orbit.providers.errors import ProviderError
 
 _logger = logging.getLogger("orbit.api.errors")
 
@@ -54,6 +55,23 @@ def install_exception_handlers(app: FastAPI) -> None:
                 request_id=current_request_id(),
                 details=details,
             ),
+        )
+
+    @app.exception_handler(ProviderError)
+    async def _provider_error(request: Request, exc: ProviderError) -> JSONResponse:
+        # Log structured context only; the message is already redacted/truncated.
+        _logger.warning(
+            "Provider request failed",
+            extra={
+                "provider": exc.provider,
+                "error_code": exc.code,
+                "upstream_status": exc.upstream_status,
+                "path": request.url.path,
+            },
+        )
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=error_body(exc.code, exc.message, request_id=current_request_id()),
         )
 
     @app.exception_handler(Exception)

@@ -167,3 +167,26 @@ development API publicly. Authentication is out of scope until remote/multi-user
 
 **Consequences.** Acceptable for a local desktop-style MVP. Any remote exposure requires TLS,
 authentication and a threat-model review first.
+
+---
+
+## ADR-012 — Provider abstraction with normalized errors
+
+**Context.** ORBIT AI must support cloud and local inference without vendor logic leaking into the
+agent runtime, and without exposing vendor payloads or credentials to clients.
+
+**Decision.** `orbit/providers/base.py` defines vendor-neutral data types (`ChatMessage`,
+`CompletionRequest`, `CompletionChunk`, `ModelInfo`, `TokenUsage`) and a `ModelProvider` protocol
+(`list_models`, `complete`, `stream`, `test_connection`, `configured`, `aclose`). Adapters
+(OpenRouter, Ollama) translate payloads and raise a normalized `ProviderError` taxonomy with a
+stable API code and HTTP status. Retries are bounded (429/5xx, exponential backoff), streams are
+parsed as SSE (OpenRouter) or NDJSON (Ollama), and upstream error text is redacted/truncated
+before it reaches clients or logs.
+
+**Alternatives.** A single generic OpenAI-compatible adapter (rejected: Ollama and future
+providers differ in discovery/stream formats); per-vendor logic inside the runtime (rejected:
+untestable, couples the core to vendors).
+
+**Consequences.** New providers are additive (implement the protocol, register in
+`build_registry`). Streaming retries are not automatic once tokens have been emitted. The
+default model is persisted in `system_state` and is not yet validated against live discovery.

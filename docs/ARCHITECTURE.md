@@ -71,11 +71,18 @@ XDG/`LOCALAPPDATA` paths, so the same code works on a VPS and on a developer lap
 - Agent traces, token/cost accounting and an audit log arrive with the runtime and security
   milestones.
 
-## Planned modules (not yet implemented)
+## Module map
+
+Implemented:
 
 | Module | Responsibility |
 | --- | --- |
-| `orbit/providers` | Provider protocol, OpenRouter/Ollama adapters, discovery, streaming |
+| `orbit/providers` | Provider protocol, OpenRouter/Ollama adapters, discovery, streaming, retries |
+
+Planned (not yet implemented):
+
+| Module | Responsibility |
+| --- | --- |
 | `orbit/agents` | Agent definitions, execution loop, planning, limits, retries |
 | `orbit/orchestrator` | Task submission/state/history; multi-agent coordination |
 | `orbit/tools` | Tool registry, schemas, permissions, sandboxed execution |

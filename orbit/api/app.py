@@ -18,6 +18,7 @@ from orbit.api.routes import api_router
 from orbit.api.routes import health as health_routes
 from orbit.core.config import APP_NAME, Settings, get_settings
 from orbit.core.logging import configure_logging
+from orbit.providers.registry import build_registry
 from orbit.storage.db import Database, run_migrations
 from orbit.storage.system_state import SystemStateStore
 
@@ -32,6 +33,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     database = Database(settings)
     app.state.db = database
+    providers = build_registry(settings)
+    app.state.providers = providers
     try:
         if settings.auto_migrate:
             await asyncio.to_thread(run_migrations, settings)
@@ -50,6 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
         yield
     finally:
+        await providers.aclose()
         await database.dispose()
         _logger.info("ORBIT AI stopped")
 

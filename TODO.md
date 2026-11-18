@@ -12,15 +12,16 @@ P2 is planned but not scheduled.
 
 ## P1 — Milestone 2: model providers
 
-- [ ] `orbit/providers/base.py`: `ModelProvider` protocol, `ModelInfo`, `ChatMessage`,
-      `CompletionRequest`, `CompletionChunk`, normalised `ProviderError` taxonomy.
-- [ ] Provider registry with capability detection and per-provider configuration.
-- [ ] OpenRouter adapter: `/models` discovery, chat completions, SSE streaming, retries with
+- [x] `orbit/providers/base.py`: `ModelProvider` protocol, `ModelInfo`, `ChatMessage`,
+      `CompletionRequest`, `CompletionChunk`, normalized `ProviderError` taxonomy.
+- [x] Provider registry with capability detection and per-provider configuration.
+- [x] OpenRouter adapter: `/models` discovery, chat completions, SSE streaming, retries with
       backoff, timeout handling.
-- [ ] Ollama adapter: `/api/tags` discovery, `/api/chat` streaming, connection test.
+- [x] Ollama adapter: `/api/tags` discovery, `/api/chat` streaming, connection test.
 - [ ] Credential storage: OS keyring first, encrypted fallback; never plaintext in SQLite.
-- [ ] `POST /api/v1/providers/{id}/test` connection endpoint and model listing endpoints.
-- [ ] Recorded-fixture tests for both adapters; no live API calls in CI.
+- [x] Provider endpoints: listing, model discovery, connection test, aggregated models and
+      persisted default-model selection.
+- [x] Recorded/mocked-transport tests for both adapters; no live API calls in CI.
 
 ## P1 — Milestone 3: chat
 
