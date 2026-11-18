@@ -27,8 +27,8 @@ Last updated: 2026-11-18
 
 ## In progress
 
-- Milestone 1 is functionally complete; the remaining close-out item is a local commit (needs a
-  git author identity) and a first CI run on GitHub (needs push approval).
+- None. Milestone 1 is complete and committed as `05f2026`; CI has not run remotely yet (push
+  requires approval).
 
 ## Pending
 
@@ -37,10 +37,11 @@ Last updated: 2026-11-18
 
 ## Latest test results
 
-`pytest -q` → **32 passed** (unit, integration, security) on 2026-11-18.
+`pytest -q` → **33 passed** (unit, integration, security) on 2026-11-18.
 `ruff check .` → clean. `ruff format --check .` → clean. `mypy` (strict) → clean.
 Manual smoke test: `python -m orbit` served `GET /health` → `200 {"status":"ok"}` on
-`127.0.0.1:18700`, created `/var/lib/orbit-ai/orbit.db` and applied revision `0001_system_state`.
+`127.0.0.1:18700`, created `/var/lib/orbit-ai/orbit.db` (mode `0600`, data dir `0700`) and
+applied revision `0001_system_state`.
 
 ## Known limitations
 
@@ -55,6 +56,6 @@ Manual smoke test: `python -m orbit` served `GET /health` → `200 {"status":"ok
 
 ## Next recommended action
 
-1. Commit Milestone 1 locally (requires configuring `git user.name` / `git user.email`).
+1. Push `05f2026` and confirm the CI workflow is green (requires approval).
 2. Begin Milestone 2 with the provider interface (`orbit/providers/base.py`) and an OpenRouter
    adapter tested against a mocked HTTP transport.

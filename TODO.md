@@ -5,9 +5,9 @@ P2 is planned but not scheduled.
 
 ## P0 — Milestone 1 close-out
 
-- [x] Install dependencies into `.venv` and run the full test suite (32 passed).
+- [x] Install dependencies into `.venv` and run the full test suite (33 passed).
 - [x] Fix lint (`ruff`), format and type (`mypy --strict`) failures.
-- [ ] Configure a git author identity and commit Milestone 1 locally.
+- [x] Configure a git author identity and commit Milestone 1 locally (`05f2026`).
 - [ ] Confirm CI workflow passes once pushed (requires approval).
 
 ## P1 — Milestone 2: model providers
