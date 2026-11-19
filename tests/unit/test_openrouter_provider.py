@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 
@@ -15,6 +17,7 @@ from orbit.providers.errors import (
     ProviderInvalidResponseError,
     ProviderNotConfigured,
     ProviderTimeoutError,
+    ProviderUnavailableError,
 )
 from orbit.providers.openrouter import OpenRouterProvider
 
@@ -26,6 +29,7 @@ MODELS = {
             "id": "z-ai/model-z",
             "name": "Model Z",
             "context_length": 8192,
+            "top_provider": {"max_completion_tokens": 4096},
             "pricing": {"prompt": "0.000001", "completion": "0.000002"},
         },
         {"id": "a-ai/model-a"},
@@ -51,6 +55,41 @@ SSE_BODY = (
 
 
 Handler = Callable[[httpx.Request], httpx.Response]
+
+
+class FailingStream(httpx.AsyncByteStream):
+    """Yield chunks, then fail like a dropped upstream connection."""
+
+    def __init__(self, chunks: list[bytes], error: Exception) -> None:
+        self._chunks = chunks
+        self._error = error
+        self.closed = False
+        self.started = asyncio.Event()
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        for chunk in self._chunks:
+            yield chunk
+        self.started.set()
+        raise self._error
+
+    async def aclose(self) -> None:
+        self.closed = True
+
+
+class BlockingStream(httpx.AsyncByteStream):
+    """Yield one chunk and then wait forever, for cancellation tests."""
+
+    def __init__(self) -> None:
+        self.started = asyncio.Event()
+        self.closed = False
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield b'data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}]}\n\n'
+        self.started.set()
+        await asyncio.Event().wait()
+
+    async def aclose(self) -> None:
+        self.closed = True
 
 
 @pytest.fixture
@@ -111,6 +150,7 @@ async def test_list_models_parses_and_sorts(make_provider) -> None:
     rich = models[1]
     assert rich.name == "Model Z"
     assert rich.context_length == 8192
+    assert rich.max_output_tokens == 4096
     assert rich.prompt_price == pytest.approx(0.000001)
     assert models[0].name == "a-ai/model-a"
 
@@ -119,7 +159,6 @@ async def test_complete_parses_content_and_usage(make_provider) -> None:
     captured: dict[str, Any] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        import json
 
         captured.update(json.loads(request.content))
         return httpx.Response(200, json=COMPLETION)
@@ -146,7 +185,6 @@ async def test_stream_parses_sse_and_ignores_noise(make_provider) -> None:
     captured: dict[str, Any] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        import json
 
         captured.update(json.loads(request.content))
         return httpx.Response(
@@ -161,6 +199,86 @@ async def test_stream_parses_sse_and_ignores_noise(make_provider) -> None:
     assert "".join(chunk.delta for chunk in chunks) == "Hello"
     assert chunks[-1].finish_reason == "stop"
     assert captured["stream"] is True
+
+
+async def test_stream_timeout_before_first_chunk_is_normalised(make_provider) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("read timed out", request=request)
+
+    provider = make_provider(handler)
+    with pytest.raises(ProviderTimeoutError):
+        await anext(provider.stream(_request()))
+
+
+async def test_stream_timeout_after_chunks_preserves_previous_output(make_provider) -> None:
+    stream = FailingStream(
+        [b'data: {"choices":[{"delta":{"content":"Hel"},"finish_reason":null}]}\n\n'],
+        httpx.ReadTimeout("read timed out"),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            stream=stream,
+        )
+
+    provider = make_provider(handler)
+    iterator = provider.stream(_request())
+    first = await anext(iterator)
+    assert first.delta == "Hel"
+
+    with pytest.raises(ProviderTimeoutError):
+        await anext(iterator)
+    assert stream.closed is True
+
+
+async def test_stream_connection_loss_is_normalised(make_provider) -> None:
+    stream = FailingStream(
+        [b'data: {"choices":[{"delta":{"content":"Hel"},"finish_reason":null}]}\n\n'],
+        httpx.ReadError("connection reset"),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, headers={"content-type": "text/event-stream"}, stream=stream)
+
+    provider = make_provider(handler)
+    with pytest.raises(ProviderUnavailableError) as excinfo:
+        [chunk async for chunk in provider.stream(_request())]
+
+    assert excinfo.value.code == "provider_unavailable"
+    assert stream.closed is True
+
+
+async def test_stream_http_error_keeps_normalised_status(make_provider) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"error": {"message": "upstream down"}})
+
+    provider = make_provider(handler)
+    with pytest.raises(ProviderUnavailableError) as excinfo:
+        await anext(provider.stream(_request()))
+
+    assert excinfo.value.code == "provider_unavailable"
+    assert "upstream down" in excinfo.value.message
+
+
+async def test_stream_cancellation_is_not_converted(make_provider) -> None:
+    stream = BlockingStream()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, headers={"content-type": "text/event-stream"}, stream=stream)
+
+    provider = make_provider(handler)
+
+    async def drain() -> None:
+        async for _ in provider.stream(_request()):
+            pass
+
+    task = asyncio.create_task(drain())
+    await asyncio.wait_for(stream.started.wait(), timeout=1)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
 
 
 async def test_retries_transient_status_then_succeeds(make_provider) -> None:

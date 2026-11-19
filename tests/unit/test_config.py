@@ -43,6 +43,22 @@ def test_blank_host_is_rejected() -> None:
         Settings(_env_file=None, host="   ")
 
 
+def test_max_output_tokens_must_be_positive() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, max_output_tokens=0)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, max_output_tokens=32001)
+    settings = Settings(_env_file=None, max_output_tokens=4096)
+    assert settings.max_output_tokens == 4096
+
+
+def test_generation_timeout_can_be_disabled() -> None:
+    settings = Settings(_env_file=None, generation_timeout_seconds=None)
+    assert settings.generation_timeout_seconds is None
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, generation_timeout_seconds=0)
+
+
 def test_cors_origins_accept_comma_separated_list(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ORBIT_CORS_ORIGINS", "http://localhost:5173, http://127.0.0.1:5174")
     try:

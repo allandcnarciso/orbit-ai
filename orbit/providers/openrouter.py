@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from time import perf_counter
 from typing import Any
@@ -24,7 +25,12 @@ from orbit.providers.errors import (
     ProviderNotConfigured,
     ProviderUnavailableError,
 )
-from orbit.providers.http import error_for_response, iter_sse_json, request_json
+from orbit.providers.http import (
+    error_for_response,
+    iter_sse_json,
+    request_json,
+    stream_transport_error,
+)
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -141,34 +147,43 @@ class OpenRouterProvider:
     async def stream(self, request: CompletionRequest) -> AsyncIterator[CompletionChunk]:
         self._require_configured()
         client = self._get_client()
-        async with client.stream(
-            "POST",
-            f"{self._base_url}/chat/completions",
-            headers=self._headers(),
-            json=_chat_payload(request, stream=True),
-            timeout=self._timeout,
-        ) as response:
-            if response.status_code >= 400:
-                await response.aread()
-                raise error_for_response(response, provider=self.id)
-            async for payload in iter_sse_json(response, provider=self.id):
-                if "error" in payload:
-                    raise ProviderUnavailableError(
-                        "OpenRouter stream reported an error.", provider=self.id
+        try:
+            async with client.stream(
+                "POST",
+                f"{self._base_url}/chat/completions",
+                headers=self._headers(),
+                json=_chat_payload(request, stream=True),
+                timeout=self._timeout,
+            ) as response:
+                if response.status_code >= 400:
+                    await response.aread()
+                    raise error_for_response(response, provider=self.id)
+                async for payload in iter_sse_json(response, provider=self.id):
+                    if "error" in payload:
+                        raise ProviderUnavailableError(
+                            "OpenRouter stream reported an error.", provider=self.id
+                        )
+                    choices = payload.get("choices")
+                    if not isinstance(choices, list) or not choices:
+                        continue
+                    choice = choices[0] if isinstance(choices[0], dict) else {}
+                    delta = choice.get("delta")
+                    text = delta.get("content") if isinstance(delta, dict) else None
+                    chunk = CompletionChunk(
+                        delta=text if isinstance(text, str) else "",
+                        model=str(payload.get("model") or request.model),
+                        finish_reason=_as_str(choice.get("finish_reason")),
                     )
-                choices = payload.get("choices")
-                if not isinstance(choices, list) or not choices:
-                    continue
-                choice = choices[0] if isinstance(choices[0], dict) else {}
-                delta = choice.get("delta")
-                text = delta.get("content") if isinstance(delta, dict) else None
-                chunk = CompletionChunk(
-                    delta=text if isinstance(text, str) else "",
-                    model=str(payload.get("model") or request.model),
-                    finish_reason=_as_str(choice.get("finish_reason")),
-                )
-                if chunk.delta or chunk.finish_reason:
-                    yield chunk
+                    if chunk.delta or chunk.finish_reason:
+                        yield chunk
+        except ProviderError:
+            raise
+        except asyncio.CancelledError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise stream_transport_error(self.id, exc) from exc
+        except httpx.HTTPError as exc:
+            raise stream_transport_error(self.id, exc) from exc
 
     async def test_connection(self) -> ConnectionTest:
         started = perf_counter()
@@ -245,12 +260,19 @@ def _parse_model(item: object) -> ModelInfo | None:
         prompt_price = _as_float(pricing.get("prompt"))
         completion_price = _as_float(pricing.get("completion"))
     context_length = item.get("context_length")
+    top_provider = item.get("top_provider")
+    max_completion = (
+        top_provider.get("max_completion_tokens") if isinstance(top_provider, dict) else None
+    )
     name = item.get("name")
     return ModelInfo(
         id=model_id,
         name=name if isinstance(name, str) and name.strip() else model_id,
         provider="openrouter",
         context_length=context_length if isinstance(context_length, int) else None,
+        max_output_tokens=(
+            max_completion if isinstance(max_completion, int) and max_completion > 0 else None
+        ),
         prompt_price=prompt_price,
         completion_price=completion_price,
     )

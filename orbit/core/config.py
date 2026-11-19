@@ -91,6 +91,15 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = Field(default=120.0, gt=0, le=600)
     provider_max_attempts: int = Field(default=3, ge=1, le=5)
     provider_retry_backoff_seconds: float = Field(default=0.5, ge=0, le=10)
+    generation_timeout_seconds: float | None = Field(default=300.0)
+    max_output_tokens: int = Field(default=8192, gt=0, le=32000)
+
+    @field_validator("generation_timeout_seconds")
+    @classmethod
+    def _validate_generation_timeout(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("generation_timeout_seconds must be positive or null")
+        return value
 
     @field_validator("port")
     @classmethod

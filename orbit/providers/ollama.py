@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from time import perf_counter
@@ -23,7 +24,7 @@ from orbit.providers.errors import (
     ProviderInvalidResponseError,
     ProviderNotConfigured,
 )
-from orbit.providers.http import error_for_response, request_json
+from orbit.providers.http import error_for_response, request_json, stream_transport_error
 
 DEFAULT_BASE_URL = "http://127.0.0.1:11434"
 
@@ -115,41 +116,50 @@ class OllamaProvider:
     async def stream(self, request: CompletionRequest) -> AsyncIterator[CompletionChunk]:
         self._require_configured()
         client = self._get_client()
-        async with client.stream(
-            "POST",
-            f"{self._base_url}/api/chat",
-            headers={"Content-Type": "application/json"},
-            json=_chat_payload(request, stream=True),
-            timeout=self._timeout,
-        ) as response:
-            if response.status_code >= 400:
-                await response.aread()
-                raise error_for_response(response, provider=self.id)
-            async for line in response.aiter_lines():
-                stripped = line.strip()
-                if not stripped:
-                    continue
-                try:
-                    payload = json.loads(stripped)
-                except json.JSONDecodeError:
-                    continue
-                if not isinstance(payload, dict):
-                    continue
-                if "error" in payload:
-                    raise ProviderInvalidResponseError(
-                        f"Ollama stream error: {payload.get('error')}", provider=self.id
+        try:
+            async with client.stream(
+                "POST",
+                f"{self._base_url}/api/chat",
+                headers={"Content-Type": "application/json"},
+                json=_chat_payload(request, stream=True),
+                timeout=self._timeout,
+            ) as response:
+                if response.status_code >= 400:
+                    await response.aread()
+                    raise error_for_response(response, provider=self.id)
+                async for line in response.aiter_lines():
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        payload = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(payload, dict):
+                        continue
+                    if "error" in payload:
+                        raise ProviderInvalidResponseError(
+                            f"Ollama stream error: {payload.get('error')}", provider=self.id
+                        )
+                    message = payload.get("message")
+                    text = message.get("content") if isinstance(message, dict) else None
+                    done = payload.get("done") is True
+                    chunk = CompletionChunk(
+                        delta=text if isinstance(text, str) else "",
+                        model=str(payload.get("model") or request.model),
+                        finish_reason="stop" if done else None,
+                        usage=_parse_usage(payload) if done else None,
                     )
-                message = payload.get("message")
-                text = message.get("content") if isinstance(message, dict) else None
-                done = payload.get("done") is True
-                chunk = CompletionChunk(
-                    delta=text if isinstance(text, str) else "",
-                    model=str(payload.get("model") or request.model),
-                    finish_reason="stop" if done else None,
-                    usage=_parse_usage(payload) if done else None,
-                )
-                if chunk.delta or chunk.finish_reason:
-                    yield chunk
+                    if chunk.delta or chunk.finish_reason:
+                        yield chunk
+        except ProviderError:
+            raise
+        except asyncio.CancelledError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise stream_transport_error(self.id, exc) from exc
+        except httpx.HTTPError as exc:
+            raise stream_transport_error(self.id, exc) from exc
 
     async def test_connection(self) -> ConnectionTest:
         started = perf_counter()

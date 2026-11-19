@@ -80,6 +80,7 @@ class ModelInfo:
     name: str
     provider: str
     context_length: int | None = None
+    max_output_tokens: int | None = None
     prompt_price: float | None = None
     completion_price: float | None = None
     metadata: dict[str, Any] = field(default_factory=dict)

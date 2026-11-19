@@ -112,6 +112,15 @@ def error_for_response(response: httpx.Response, *, provider: str) -> ProviderEr
     return ProviderInvalidResponseError(message, **kwargs)
 
 
+def stream_transport_error(provider: str, exc: Exception) -> ProviderError:
+    """Normalise transport failures raised while a stream is being consumed."""
+    if isinstance(exc, httpx.TimeoutException):
+        return ProviderTimeoutError(f"{provider} timed out while streaming", provider=provider)
+    return ProviderUnavailableError(
+        f"Connection to {provider} was interrupted while streaming", provider=provider
+    )
+
+
 async def iter_sse_json(
     response: httpx.Response, *, provider: str
 ) -> AsyncIterator[dict[str, Any]]:

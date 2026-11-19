@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator, Callable
 from typing import Any
@@ -10,10 +11,48 @@ import httpx
 import pytest
 
 from orbit.providers.base import ChatMessage, CompletionRequest, Role
-from orbit.providers.errors import ProviderInvalidResponseError, ProviderUnavailableError
+from orbit.providers.errors import (
+    ProviderInvalidResponseError,
+    ProviderTimeoutError,
+    ProviderUnavailableError,
+)
 from orbit.providers.ollama import OllamaProvider
 
 Handler = Callable[[httpx.Request], httpx.Response]
+
+
+class FailingStream(httpx.AsyncByteStream):
+    """Yield chunks, then fail like a dropped upstream connection."""
+
+    def __init__(self, chunks: list[bytes], error: Exception) -> None:
+        self._chunks = chunks
+        self._error = error
+        self.closed = False
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        for chunk in self._chunks:
+            yield chunk
+        raise self._error
+
+    async def aclose(self) -> None:
+        self.closed = True
+
+
+class BlockingStream(httpx.AsyncByteStream):
+    """Yield one chunk and then wait forever, for cancellation tests."""
+
+    def __init__(self) -> None:
+        self.started = asyncio.Event()
+        self.closed = False
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield b'{"message":{"content":"Hi"},"done":false}\n'
+        self.started.set()
+        await asyncio.Event().wait()
+
+    async def aclose(self) -> None:
+        self.closed = True
+
 
 TAGS = {
     "models": [
@@ -129,6 +168,81 @@ async def test_stream_parses_ndjson(make_provider) -> None:
     assert chunks[-1].finish_reason == "stop"
     assert chunks[-1].usage is not None
     assert chunks[-1].usage.total_tokens == 4
+
+
+async def test_stream_timeout_before_first_chunk_is_normalised(make_provider) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("read timed out", request=request)
+
+    provider = make_provider(handler)
+    with pytest.raises(ProviderTimeoutError):
+        await anext(provider.stream(_request()))
+
+
+async def test_stream_timeout_after_chunks_preserves_previous_output(make_provider) -> None:
+    stream = FailingStream(
+        [b'{"message":{"content":"Hel"},"done":false}\n'],
+        httpx.ReadTimeout("read timed out"),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, stream=stream)
+
+    provider = make_provider(handler)
+    iterator = provider.stream(_request())
+    first = await anext(iterator)
+    assert first.delta == "Hel"
+
+    with pytest.raises(ProviderTimeoutError):
+        await anext(iterator)
+    assert stream.closed is True
+
+
+async def test_stream_connection_loss_is_normalised(make_provider) -> None:
+    stream = FailingStream(
+        [b'{"message":{"content":"Hel"},"done":false}\n'],
+        httpx.ReadError("connection reset"),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, stream=stream)
+
+    provider = make_provider(handler)
+    with pytest.raises(ProviderUnavailableError) as excinfo:
+        [chunk async for chunk in provider.stream(_request())]
+
+    assert excinfo.value.code == "provider_unavailable"
+    assert stream.closed is True
+
+
+async def test_stream_http_error_keeps_normalised_status(make_provider) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"error": "upstream down"})
+
+    provider = make_provider(handler)
+    with pytest.raises(ProviderUnavailableError) as excinfo:
+        await anext(provider.stream(_request()))
+
+    assert excinfo.value.code == "provider_unavailable"
+
+
+async def test_stream_cancellation_is_not_converted(make_provider) -> None:
+    stream = BlockingStream()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, stream=stream)
+
+    provider = make_provider(handler)
+
+    async def drain() -> None:
+        async for _ in provider.stream(_request()):
+            pass
+
+    task = asyncio.create_task(drain())
+    await asyncio.wait_for(stream.started.wait(), timeout=1)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
 
 
 async def test_unreachable_daemon_is_normalised(make_provider) -> None:
