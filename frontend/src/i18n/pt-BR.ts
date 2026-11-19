@@ -1,0 +1,215 @@
+export const ptBR = {
+  "app.tagline": "One Harness. Any Model. Infinite Possibilities.",
+  "app.preAlpha": "Pré-alpha",
+  "app.version": "Versão {version}",
+  "app.home": "ORBIT AI — início",
+
+  "nav.primary": "Navegação principal",
+  "nav.chat": "Chat",
+  "nav.agents": "Agentes",
+  "nav.models": "Modelos",
+  "nav.providers": "Providers",
+  "nav.tools": "Ferramentas",
+  "nav.skills": "Skills",
+  "nav.memory": "Memória",
+  "nav.tasks": "Tarefas",
+  "nav.settings": "Configurações",
+
+  "topbar.toggleSidebar": "Alternar barra lateral",
+  "topbar.closeSidebar": "Fechar menu",
+  "topbar.language": "Idioma",
+  "topbar.theme": "Tema",
+  "topbar.themeLight": "Claro",
+  "topbar.themeDark": "Escuro",
+
+  "language.ptBR": "Português (Brasil)",
+  "language.enUS": "English (US)",
+  "language.esES": "Español (España)",
+
+  "common.comingSoon": "Em breve",
+  "common.comingSoonDescription":
+    "Esta área será disponibilizada em uma versão futura do ORBIT AI. A navegação já está preparada para receber a funcionalidade.",
+  "common.skipToContent": "Ir para o conteúdo",
+
+  "page.chat.title": "Chat",
+  "page.chat.description":
+    "Converse com qualquer modelo suportado pelo ORBIT AI, com histórico persistente e respostas em streaming.",
+  "page.agents.title": "Agentes",
+  "page.agents.description":
+    "Crie e configure agentes com instruções, limites e ferramentas autorizadas.",
+  "page.models.title": "Modelos",
+  "page.models.description":
+    "Descubra modelos disponíveis nos providers configurados e defina o modelo padrão.",
+  "page.providers.title": "Providers",
+  "page.providers.description":
+    "Gerencie os providers de inferência, teste conexões e acompanhe o status de configuração.",
+  "page.tools.title": "Ferramentas",
+  "page.tools.description":
+    "Ferramentas autorizadas que os agentes poderão executar com permissões explícitas.",
+  "page.skills.title": "Skills",
+  "page.skills.description":
+    "Habilidades instaláveis que estendem o comportamento dos agentes.",
+  "page.memory.title": "Memória",
+  "page.memory.description":
+    "Memória de conversas, agentes e usuário, com inspeção e correção.",
+  "page.tasks.title": "Tarefas",
+  "page.tasks.description":
+    "Acompanhe tarefas e execuções orquestradas entre agentes.",
+  "page.settings.title": "Configurações",
+  "page.settings.description":
+    "Preferências da interface e informações da aplicação.",
+
+  "chat.conversations": "Conversas",
+  "chat.newConversation": "Nova conversa",
+  "chat.emptyTitle": "Nenhuma conversa ainda",
+  "chat.emptyDescription":
+    "A experiência de chat será conectada ao backend na próxima fase do Milestone 4.",
+  "chat.composerPlaceholder": "Escreva uma mensagem…",
+  "chat.send": "Enviar",
+  "chat.stop": "Interromper",
+  "chat.composerHint": "Enter para enviar · Shift+Enter para nova linha",
+  "chat.defaultModel": "Modelo padrão",
+
+  "settings.appearance": "Aparência",
+  "settings.theme": "Tema",
+  "settings.themeDescription":
+    "Escolha o tema da interface. A preferência fica salva neste navegador.",
+  "settings.light": "Claro",
+  "settings.dark": "Escuro",
+  "settings.language": "Idioma",
+  "settings.languageDescription":
+    "Idioma da interface. É independente do idioma usado pelo modelo nas respostas.",
+  "settings.about": "Sobre",
+  "settings.version": "Versão",
+  "settings.apiBase": "API do backend",
+  "settings.apiBaseDescription":
+    "A interface consome a API REST/SSE do ORBIT AI. Em desenvolvimento, o Vite faz proxy para 127.0.0.1:18700.",
+  "settings.docs": "Documentação da API",
+  "settings.docsDescription":
+    "Referência OpenAPI servida pelo backend em /docs.",
+  "settings.backendNote":
+    "Credenciais e endpoints de providers são configurados por variáveis de ambiente do backend e nunca são armazenados no navegador.",
+
+  "common.loading": "Carregando…",
+  "common.retry": "Tentar novamente",
+  "common.refresh": "Atualizar",
+  "common.configured": "Configurado",
+  "common.notConfigured": "Não configurado",
+  "common.testConnection": "Testar conexão",
+  "common.testing": "Testando…",
+  "common.requestId": "ID da requisição",
+  "common.status": "Status",
+
+  "errors.offline": "Não foi possível conectar ao backend.",
+  "errors.timeout": "O backend demorou demais para responder.",
+  "errors.notFound": "Recurso não encontrado.",
+  "errors.providerNotConfigured": "O provider não está configurado.",
+  "errors.providerUnavailable": "O provider está indisponível.",
+  "errors.providerTimeout": "O provider demorou demais para responder.",
+  "errors.providerAuth": "O provider rejeitou a credencial configurada.",
+  "errors.providerRateLimited": "O provider limitou temporariamente as requisições.",
+  "errors.invalidResponse": "O backend ou provider retornou uma resposta inválida.",
+  "errors.modelNotFound": "O modelo selecionado não está disponível.",
+  "errors.validation": "Os dados enviados são inválidos.",
+  "errors.conflict": "A operação conflita com outra em andamento.",
+  "errors.generationInProgress": "Já existe uma geração em andamento nesta conversa.",
+  "errors.conversationDeleted": "A conversa foi excluída durante a geração.",
+  "errors.serverShuttingDown": "O servidor está sendo encerrado. Tente novamente em instantes.",
+  "errors.requestFailed": "A requisição falhou.",
+  "errors.generic": "Ocorreu um erro inesperado.",
+
+  "providers.empty": "Nenhum provider disponível",
+  "providers.emptyDescription":
+    "O backend não registrou nenhum provider de inferência.",
+  "providers.loadError": "Não foi possível carregar os providers.",
+  "providers.testOk": "Conexão bem-sucedida",
+  "providers.testFailed": "Falha na conexão",
+  "providers.modelCount": "{count} modelos",
+  "providers.latency": "{ms} ms",
+  "providers.configHint":
+    "Configure credenciais e endpoints no backend por variáveis de ambiente.",
+  "providers.detail": "Detalhe",
+  "providers.capabilities": "Capacidades",
+  "providers.streaming": "Streaming",
+  "providers.tools": "Ferramentas",
+  "providers.vision": "Visão",
+  "providers.jsonMode": "Modo JSON",
+  "providers.testError": "O teste de conexão falhou.",
+  "providers.testFailedDetail":
+    "Verifique a configuração e a disponibilidade do provider.",
+  "providers.requiresConfig":
+    "Provider não configurado. O teste é executado, mas pode falhar.",
+
+  "models.empty": "Nenhum modelo descoberto",
+  "models.emptyDescription":
+    "Configure um provider no backend para descobrir modelos disponíveis.",
+  "models.loadError": "Não foi possível carregar os modelos.",
+  "models.searchPlaceholder": "Buscar modelos…",
+  "models.filterProvider": "Filtrar por provider",
+  "models.allProviders": "Todos os providers",
+  "models.contextLength": "{tokens} tokens de contexto",
+  "models.defaultBadge": "Padrão",
+  "models.setDefault": "Definir como padrão",
+  "models.settingDefault": "Definindo…",
+  "models.defaultSet": "Modelo padrão atualizado.",
+  "models.defaultError": "Não foi possível definir o modelo padrão.",
+  "models.partialErrors": "Alguns providers não puderam ser consultados:",
+  "models.count": "{count} modelos",
+
+  "settings.health": "Saúde do backend",
+  "settings.healthStatus": "Status",
+  "settings.healthOperational": "Operacional",
+  "settings.healthUnavailable": "Indisponível",
+  "settings.healthChecks": "Verificações",
+  "settings.system": "Informações do sistema",
+  "settings.environment": "Ambiente",
+  "settings.apiVersion": "Versão da API",
+  "settings.python": "Python",
+  "settings.platform": "Plataforma",
+  "settings.architecture": "Arquitetura",
+  "settings.startedAt": "Iniciado em",
+  "settings.loadError": "Não foi possível carregar as informações do backend.",
+
+  "chat.searchConversations": "Buscar conversas…",
+  "chat.loadMoreConversations": "Carregar mais conversas",
+  "chat.listEmptyTitle": "Nenhuma conversa ainda",
+  "chat.listEmptyDescription": "Crie uma conversa para começar.",
+  "chat.welcomeTitle": "Como posso ajudar?",
+  "chat.welcomeDescription":
+    "Envie uma mensagem para iniciar uma nova conversa.",
+  "chat.selectConversationTitle": "Selecione uma conversa",
+  "chat.selectConversationDescription":
+    "Escolha uma conversa na lista ou crie uma nova.",
+  "chat.backToConversations": "Voltar para conversas",
+  "chat.generating": "Gerando resposta…",
+  "chat.statusStreaming": "Gerando",
+  "chat.statusCompleted": "Concluída",
+  "chat.statusFailed": "Falhou",
+  "chat.statusCancelled": "Cancelada",
+  "chat.streamInterrupted": "A conexão de streaming terminou inesperadamente.",
+  "chat.historyStale":
+    "Não foi possível confirmar o histórico com o backend. Recarregue a conversa.",
+  "chat.cancelling": "Cancelando…",
+  "chat.announceStarted": "Gerando resposta.",
+  "chat.announceCompleted": "Resposta concluída.",
+  "chat.announceCancelled": "Geração cancelada.",
+  "chat.announceFailed": "A geração falhou.",
+  "chat.messagesLabel": "Mensagens da conversa",
+  "chat.charCount": "{count}/{max} caracteres",
+  "chat.imageBlocked": "Imagem externa bloqueada",
+  "chat.sendFailed": "Não foi possível enviar a mensagem.",
+  "chat.cancelFailed": "Não foi possível interromper a geração.",
+  "chat.loadOlder": "Carregar mensagens anteriores",
+  "chat.messagesEmpty": "Envie uma mensagem para começar.",
+  "chat.jumpToLatest": "Ir para a mais recente",
+  "chat.retrySend": "Reenviar",
+  "chat.you": "Você",
+  "chat.assistant": "ORBIT AI",
+  "chat.providerModel": "{provider} · {model}",
+  "chat.headerDefaultModel": "Modelo padrão: {model}",
+  "chat.messageTokens": "{count} tokens",
+  "chat.partialResponse": "Resposta parcial",
+} as const;
+
+export type MessageKey = keyof typeof ptBR;
+export type Messages = Record<MessageKey, string>;

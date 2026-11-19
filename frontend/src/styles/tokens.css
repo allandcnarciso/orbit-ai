@@ -1,0 +1,110 @@
+:root {
+  color-scheme: dark;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono",
+    monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  --sidebar-width: 252px;
+  --sidebar-collapsed: 76px;
+  --topbar-height: 60px;
+
+  --transition: 160ms ease;
+}
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0a0e13;
+  --bg-subtle: #0e141b;
+  --surface: #121a23;
+  --surface-raised: #17212c;
+  --surface-hover: #1b2734;
+  --surface-active: #203040;
+
+  --border: #223040;
+  --border-strong: #2d3f52;
+
+  --text: #e7eef6;
+  --text-muted: #9aa9b9;
+  --text-faint: #7d8d9e;
+
+  --accent: #5b8cff;
+  --accent-hover: #7aa2ff;
+  --accent-soft: rgba(91, 140, 255, 0.14);
+  --accent-contrast: #081126;
+
+  --success: #3ddc97;
+  --success-soft: rgba(61, 220, 151, 0.13);
+  --warning: #f5b955;
+  --warning-soft: rgba(245, 185, 85, 0.13);
+  --danger: #ff6b7a;
+  --danger-soft: rgba(255, 107, 122, 0.13);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.45);
+
+  --overlay: rgba(4, 8, 12, 0.62);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f5f7fa;
+  --bg-subtle: #eef2f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f0f4f9;
+  --surface-active: #e6edf7;
+
+  --border: #dde5ee;
+  --border-strong: #c9d5e2;
+
+  --text: #101a26;
+  --text-muted: #5a6b7d;
+  --text-faint: #5f6f80;
+
+  --accent: #2f5fe0;
+  --accent-hover: #1f4dc8;
+  --accent-soft: rgba(47, 95, 224, 0.1);
+  --accent-contrast: #ffffff;
+
+  --success: #137a53;
+  --success-soft: rgba(19, 122, 83, 0.1);
+  --warning: #9a6410;
+  --warning-soft: rgba(154, 100, 16, 0.1);
+  --danger: #c02d3f;
+  --danger-soft: rgba(192, 45, 63, 0.09);
+
+  --shadow-sm: 0 1px 2px rgba(16, 26, 38, 0.06);
+  --shadow-md: 0 10px 30px rgba(16, 26, 38, 0.08);
+  --shadow-lg: 0 20px 50px rgba(16, 26, 38, 0.12);
+
+  --overlay: rgba(16, 26, 38, 0.4);
+}
