@@ -13,6 +13,7 @@ from orbit.api.schemas import (
     ModelSelection,
     ProviderErrorInfo,
 )
+from orbit.conversations.errors import ModelNotAvailable
 from orbit.providers.base import ModelInfo
 from orbit.providers.errors import ProviderError, ProviderNotConfigured
 from orbit.providers.registry import ProviderRegistry
@@ -51,9 +52,10 @@ def _to_schema(model: ModelInfo) -> ModelInfoSchema:
 )
 async def aggregate_models(request: Request) -> AggregatedModelsResponse:
     response = AggregatedModelsResponse()
-    for provider in _registry(request).configured():
+    registry = _registry(request)
+    for provider in registry.configured():
         try:
-            models = await provider.list_models()
+            models = await registry.discover_models(provider)
         except ProviderNotConfigured:
             continue
         except ProviderError as exc:
@@ -79,12 +81,18 @@ async def get_default_model(request: Request) -> ModelSelection | None:
 
 @router.put("/default", response_model=ModelSelection, summary="Select the default model")
 async def set_default_model(payload: ModelSelection, request: Request) -> ModelSelection:
-    provider = _registry(request).get(payload.provider)
+    registry = _registry(request)
+    provider = registry.get(payload.provider)
     if provider is None:
         raise HTTPException(status_code=404, detail=f"Unknown provider: {payload.provider}")
     if not provider.configured:
         raise ProviderNotConfigured(
             f"Provider {payload.provider} is not configured.", provider=payload.provider
+        )
+    models = await registry.discover_models(provider)
+    if not any(item.id == payload.model for item in models):
+        raise ModelNotAvailable(
+            f"Model {payload.model} is not available for provider {payload.provider}."
         )
     await _store(request).set(
         _SELECTION_KEY,

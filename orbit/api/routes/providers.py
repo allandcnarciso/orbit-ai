@@ -54,7 +54,7 @@ async def list_providers(request: Request) -> list[ProviderStatus]:
 )
 async def list_models(provider_id: str, request: Request) -> ModelListResponse:
     provider = _provider(request, provider_id)
-    models = await provider.list_models()
+    models = await _registry(request).discover_models(provider)
     return ModelListResponse(
         provider=provider.id,
         count=len(models),
@@ -80,7 +80,12 @@ async def list_models(provider_id: str, request: Request) -> ModelListResponse:
 )
 async def test_provider(provider_id: str, request: Request) -> ConnectionTestResponse:
     provider = _provider(request, provider_id)
-    result = await provider.test_connection()
+    try:
+        result = await provider.test_connection()
+    finally:
+        # A fresh connectivity probe is the explicit refresh signal available
+        # without changing the public API: discard any stale catalog entry.
+        _registry(request).invalidate_models(provider.id)
     return ConnectionTestResponse(
         provider=provider.id,
         ok=result.ok,

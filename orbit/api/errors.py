@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from orbit.api.middleware import current_request_id
+from orbit.conversations.errors import ConversationError
 from orbit.providers.errors import ProviderError
 
 _logger = logging.getLogger("orbit.api.errors")
@@ -55,6 +56,21 @@ def install_exception_handlers(app: FastAPI) -> None:
                 request_id=current_request_id(),
                 details=details,
             ),
+        )
+
+    @app.exception_handler(ConversationError)
+    async def _conversation_error(request: Request, exc: ConversationError) -> JSONResponse:
+        _logger.info(
+            "Conversation request rejected",
+            extra={
+                "error_code": exc.code,
+                "conversation_id": exc.conversation_id,
+                "path": request.url.path,
+            },
+        )
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=error_body(exc.code, exc.message, request_id=current_request_id()),
         )
 
     @app.exception_handler(ProviderError)

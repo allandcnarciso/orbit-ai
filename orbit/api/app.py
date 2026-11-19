@@ -16,6 +16,8 @@ from orbit.api.errors import install_exception_handlers
 from orbit.api.middleware import RequestContextMiddleware
 from orbit.api.routes import api_router
 from orbit.api.routes import health as health_routes
+from orbit.chat.engine import ConversationEngine
+from orbit.conversations.repository import ConversationRepository
 from orbit.core.config import APP_NAME, Settings, get_settings
 from orbit.core.logging import configure_logging
 from orbit.providers.registry import build_registry
@@ -35,10 +37,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.db = database
     providers = build_registry(settings)
     app.state.providers = providers
+    app.state.engine = ConversationEngine(
+        database.session_factory,
+        providers,
+        generation_timeout_seconds=settings.generation_timeout_seconds,
+        max_output_tokens=settings.max_output_tokens,
+    )
     try:
         if settings.auto_migrate:
             await asyncio.to_thread(run_migrations, settings)
         await database.ping()
+
+        # Recovery must complete before the app accepts requests; it is idempotent.
+        async with database.session_factory() as session:
+            recovery = await ConversationRepository(session).recover_interrupted()
+            await session.commit()
+        if recovery.messages_recovered or recovery.locks_cleared:
+            _logger.warning(
+                "Recovered interrupted generations (messages=%s, locks=%s)",
+                recovery.messages_recovered,
+                recovery.locks_cleared,
+            )
 
         started_at = datetime.now(tz=UTC)
         app.state.started_at = started_at
@@ -53,6 +72,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
         yield
     finally:
+        await app.state.engine.shutdown()
         await providers.aclose()
         await database.dispose()
         _logger.info("ORBIT AI stopped")
