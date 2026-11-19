@@ -25,6 +25,7 @@ dist/
 build/
 .npm/
 .vite/
+coverage/
 
 # Databases and runtime
 *.db
