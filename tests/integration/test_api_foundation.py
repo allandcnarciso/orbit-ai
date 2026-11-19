@@ -33,7 +33,7 @@ async def test_database_file_is_created_and_migrated(app) -> None:
 
     async with app.state.db.engine.connect() as connection:
         revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert revision == "0001_system_state"
+    assert revision == "0002_conversations_messages"
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
